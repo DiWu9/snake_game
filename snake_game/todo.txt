@@ -1,0 +1,15 @@
+- board
+    - style [x]
+
+- snake
+    - style [x]
+    - initialize [x]
+    - auto-movement []
+    - change direction []
+    - reverse []
+    - game over []
+
+- food
+    - style [x]
+    - initialize [x]
+    - food consumption []
