@@ -1,5 +1,7 @@
 # Snake Game
 
+![demo](/demo.png)
+
 A snake game developed using React. Because I am(was) new to React, the project idea and implementation are hugely based on the snake game project created by Clément Mihailescu (the original github [repo](https://github.com/clementmihailescu/Snake-Game-Reverse-LL-Tutorial)).
 
 ## Game Description

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { randomIntFromInterval, useInterval } from "../lib/utils.js";
+import { randomIntFromInterval, useInterval, reverseLinkedList } from "../lib/utils.js";
 
 import "./Board.css";
 
@@ -19,6 +19,7 @@ class LinkedList {
 }
 
 const BOARD_SIZE = 15;
+const PROBABILITY_OF_DIRECTION_REVERSAL_FOOD = 0.3;
 
 const Direction = {
   UP: "UP",
@@ -44,18 +45,15 @@ const Board = () => {
     });
   });
 
-  // useInterval(() => {
-  //   moveSnake();
-  // }, delay);
+  useInterval(() => {
+    moveSnake();
+  }, delay);
 
   const handleKeyDown = (e) => {
     const newDirection = getDirectionFromKey(e.key);
-    if (
-      newDirection !== "" &&
-      newDirection !== getOppositeDirection(direction)
-    ) {
-      setDirection(newDirection);
-    }
+    if (newDirection === '') return;
+    if (newDirection === getOppositeDirection(direction) && snakeCells.size > 1) return;
+    setDirection(newDirection);
   };
 
   const moveSnake = () => {
@@ -70,14 +68,16 @@ const Board = () => {
       handleGameOver();
       return;
     }
-    const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
+    
     // snake eats itself
+    const nextHeadCell = board[nextHeadCoords.row][nextHeadCoords.col];
     if (snakeCells.has(nextHeadCell)) {
       handleGameOver();
       return;
     }
 
     const isFoodConsumed = nextHeadCell === foodCell;
+
     // update snake cell set
     const newSnakeCells = new Set(snakeCells);
     if (!isFoodConsumed) {
@@ -94,7 +94,6 @@ const Board = () => {
     });
     snake.head.next = nextHead;
     snake.head = nextHead;
-
     if (!isFoodConsumed) {
       snake.tail = snake.tail.next;
       if (snake.tail === null) snake.tail = snake.head;
@@ -106,6 +105,16 @@ const Board = () => {
   };
 
   const handleFoodConsumption = () => {
+    // reverse snake
+    if (Math.random() < PROBABILITY_OF_DIRECTION_REVERSAL_FOOD) {
+      setDirection(getTailOppositeDirection(snake, direction));
+      reverseLinkedList(snake.tail);
+      const snakeHead = snake.head;
+      snake.head = snake.tail;
+      snake.tail = snakeHead;
+    }
+
+    // generate next food
     const maxPossibleCellValue = BOARD_SIZE * BOARD_SIZE;
     let nextFoodCell;
     while (true) {
@@ -124,6 +133,9 @@ const Board = () => {
       <div>
         <p> Score: {score} </p>
       </div>
+      <div>
+        <p>Direction: {direction}</p>
+      </div>
       {/* <div>
         <button onClick={moveSnake}>Move Snake</button>
       </div> */}
@@ -141,7 +153,6 @@ const Board = () => {
                     : ""
                 }`}
               >
-                {cellValue}
               </div>
             ))}
           </div>
@@ -226,5 +237,21 @@ const getOppositeDirection = (direction) => {
   if (direction === Direction.RIGHT) return Direction.LEFT;
   return "";
 };
+
+const getTailOppositeDirection = (snake, direction) => {
+  const tail = snake.tail;
+  const nextToTail = tail.next;
+  if (nextToTail === null) {
+    return getOppositeDirection(direction);
+  }
+  else {
+    if (tail.value.row === nextToTail.value.row) {
+      return tail.value.col < nextToTail.value.col ? Direction.LEFT : Direction.RIGHT;
+    }
+    else {
+      return tail.value.row < nextToTail.value.row ? Direction.UP : Direction.DOWN;
+    }
+  }
+}
 
 export default Board;
