@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { randomIntFromInterval, useInterval } from "../lib/utils.js";
 
 import "./Board.css";
@@ -28,18 +28,35 @@ const Direction = {
 };
 
 const Board = () => {
-
   const [board, setBoard] = useState(createBoard(BOARD_SIZE));
   const [score, setScore] = useState(0);
   const [delay, setDelay] = useState(150);
   const [snake, setSnake] = useState(new LinkedList(getStartSnakeHead(board)));
-  const [snakeCells, setSnakeCells] = useState(new Set([snake.head.value.cell]));
+  const [snakeCells, setSnakeCells] = useState(
+    new Set([snake.head.value.cell])
+  );
   const [foodCell, setFoodCell] = useState(snake.head.value.cell + 5);
   const [direction, setDirection] = useState(Direction.RIGHT);
 
-  useInterval(() => {
-    moveSnake();
-  }, delay);
+  useEffect(() => {
+    window.addEventListener("keydown", (e) => {
+      handleKeyDown(e);
+    });
+  });
+
+  // useInterval(() => {
+  //   moveSnake();
+  // }, delay);
+
+  const handleKeyDown = (e) => {
+    const newDirection = getDirectionFromKey(e.key);
+    if (
+      newDirection !== "" &&
+      newDirection !== getOppositeDirection(direction)
+    ) {
+      setDirection(newDirection);
+    }
+  };
 
   const moveSnake = () => {
     const currHeadCoords = {
@@ -60,9 +77,12 @@ const Board = () => {
       return;
     }
 
+    const isFoodConsumed = nextHeadCell === foodCell;
     // update snake cell set
     const newSnakeCells = new Set(snakeCells);
-    newSnakeCells.delete(snake.tail.value.cell);
+    if (!isFoodConsumed) {
+      newSnakeCells.delete(snake.tail.value.cell);
+    }
     newSnakeCells.add(nextHeadCell);
     setSnakeCells(newSnakeCells);
 
@@ -75,8 +95,14 @@ const Board = () => {
     snake.head.next = nextHead;
     snake.head = nextHead;
 
-    snake.tail = snake.tail.next;
-    if (snake.tail === null) snake.tail = snake.head;
+    if (!isFoodConsumed) {
+      snake.tail = snake.tail.next;
+      if (snake.tail === null) snake.tail = snake.head;
+    }
+
+    if (isFoodConsumed) {
+      handleFoodConsumption();
+    }
   };
 
   const handleFoodConsumption = () => {
@@ -87,14 +113,20 @@ const Board = () => {
       if (snakeCells.has(nextFoodCell) || foodCell === nextFoodCell) continue;
       break;
     }
+    setFoodCell(nextFoodCell);
+    setScore(score + 1);
   };
 
-  const handleGameOver = () => {
-
-  };
+  const handleGameOver = () => {};
 
   return (
     <div>
+      <div>
+        <p> Score: {score} </p>
+      </div>
+      {/* <div>
+        <button onClick={moveSnake}>Move Snake</button>
+      </div> */}
       <div className="Board">
         {board.map((row, rowIdx) => (
           <div key={rowIdx} className="row">
@@ -102,7 +134,11 @@ const Board = () => {
               <div
                 key={cellIdx}
                 className={`cell ${
-                  snakeCells.has(cellValue) ? "snake-cell" : ""
+                  snakeCells.has(cellValue)
+                    ? "snake-cell"
+                    : foodCell === cellValue
+                    ? "food-cell"
+                    : ""
                 }`}
               >
                 {cellValue}
@@ -110,9 +146,6 @@ const Board = () => {
             ))}
           </div>
         ))}
-      </div>
-      <div className="BoardInfo">
-        <div>Score: 0</div>
       </div>
     </div>
   );
@@ -156,33 +189,41 @@ const getNextCoordinate = (currCoord, direction) => {
       row: currCoord.row + 1,
       col: currCoord.col,
     };
-  };
+  }
   if (direction === Direction.LEFT) {
     return {
       row: currCoord.row,
       col: currCoord.col - 1,
     };
-  };
+  }
   if (direction === Direction.RIGHT) {
     return {
       row: currCoord.row,
       col: currCoord.col + 1,
     };
-  };
+  }
 };
 
 const isOutOfBound = (currCoord, board) => {
-  const {row, col} = currCoord;
+  const { row, col } = currCoord;
   if (row < 0 || row >= board.length) return true;
   if (col < 0 || col >= board[0].length) return true;
   return false;
-}
+};
 
 const getDirectionFromKey = (key) => {
   if (key === "ArrowUp") return Direction.UP;
   if (key === "ArrowDown") return Direction.DOWN;
   if (key === "ArrowLeft") return Direction.LEFT;
   if (key === "ArrowRight") return Direction.RIGHT;
+  return "";
+};
+
+const getOppositeDirection = (direction) => {
+  if (direction === Direction.UP) return Direction.DOWN;
+  if (direction === Direction.DOWN) return Direction.UP;
+  if (direction === Direction.LEFT) return Direction.RIGHT;
+  if (direction === Direction.RIGHT) return Direction.LEFT;
   return "";
 };
 
